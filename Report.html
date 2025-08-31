@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Indrasha - Advanced Environmental Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+body{font-family:Arial,sans-serif;margin:0;padding:0;background:#e0f7fa;}
+.container{max-width:1400px;margin:auto;padding:20px;}
+h1,h2,h3{color:#00796b;}
+.status-bar{display:flex;gap:20px;margin-top:10px;flex-wrap:wrap;}
+.status-item{display:flex;align-items:center;gap:5px;}
+.status-indicator{width:12px;height:12px;border-radius:50%;}
+.status-active{background-color:#4caf50;}
+.status-warning{background-color:#ff9800;}
+nav.nav{margin:20px 0;}
+nav.nav button{padding:10px 15px;margin-right:10px;border:none;border-radius:5px;cursor:pointer;background-color:#00796b;color:white;}
+nav.nav button.active{background-color:#004d40;}
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+.region-selector select{padding:8px;margin-right:10px;border-radius:5px;border:1px solid #ccc;}
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;margin-top:20px;}
+.metric-card{background:white;padding:15px;border-radius:10px;box-shadow:0 4px 8px rgba(0,0,0,0.1);}
+.metric-header{display:flex;justify-content:space-between;align-items:center;}
+.prediction-badge{background:#00796b;color:white;padding:2px 6px;border-radius:4px;font-size:12px;}
+.metric-good{border-left:5px solid #4caf50;}
+.metric-moderate{border-left:5px solid #ffeb3b;}
+.metric-unhealthy-sensitive{border-left:5px solid #ff9800;}
+.metric-unhealthy{border-left:5px solid #f44336;}
+.metric-very-unhealthy{border-left:5px solid #9c27b0;}
+.metric-hazardous{border-left:5px solid #000;}
+.metric-excellent{border-left:5px solid #4caf50;}
+.metric-good-water{border-left:5px solid #8bc34a;}
+.metric-fair{border-left:5px solid #ffc107;}
+.metric-poor{border-left:5px solid #f44336;}
+.alert{padding:10px 15px;border-radius:5px;margin-top:20px;}
+.alert-warning{background-color:#fff3e0;color:#e65100;}
+.alert-success{background-color:#e8f5e9;color:#2e7d32;}
+.chart-container{background:white;padding:15px;border-radius:10px;margin-top:20px;box-shadow:0 4px 8px rgba(0,0,0,0.1);}
+.controls-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;margin-top:20px;}
+.control-card{background:white;padding:15px;border-radius:10px;box-shadow:0 4px 8px rgba(0,0,0,0.1);}
+.control-item{display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
+.switch{position:relative;display:inline-block;width:50px;height:24px;}
+.switch input{opacity:0;width:0;height:0;}
+.slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ccc;transition:.4s;border-radius:24px;}
+.slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;background:white;transition:.4s;border-radius:50%;}
+input:checked + .slider{background:#00796b;}
+input:checked + .slider:before{transform: translateX(26px);}
+table{width:100%;border-collapse:collapse;margin-top:15px;}
+table,th,td{border:1px solid #ccc;}
+th,td{padding:8px;text-align:center;}
+th{background:#00796b;color:white;}
+.ai-assistant{position:fixed;bottom:20px;right:20px;}
+.ai-button{background:#00796b;color:white;border:none;border-radius:50%;width:60px;height:60px;cursor:pointer;font-size:24px;}
+.ai-chat-container{display:none;width:350px;max-height:500px;background:white;border-radius:10px;box-shadow:0 4px 10px rgba(0,0,0,0.3);flex-direction:column;overflow:hidden;}
+.ai-chat-header{background:#00796b;color:white;padding:10px;display:flex;justify-content:space-between;align-items:center;}
+.ai-chat-messages{flex:1;padding:10px;overflow-y:auto;}
+.ai-chat-input{display:flex;gap:5px;padding:10px;border-top:1px solid #ccc;}
+.ai-chat-input input{flex:1;padding:8px;border-radius:5px;border:1px solid #ccc;}
+.ai-message{margin-bottom:10px;padding:8px;border-radius:5px;}
+.assistant{background:#e0f2f1;}
+.user{background:#c8e6c9;text-align:right;}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🌏 Indrasha - Advanced Environmental Dashboard (India)</h1>
+<div class="status-bar">
+<div class="status-item"><div class="status-indicator status-active"></div><span>API Connected</span></div>
+<div class="status-item"><div class="status-indicator status-active"></div><span>AI Models Active</span></div>
+<div class="status-item"><div class="status-indicator status-warning"></div><span>2 Active Alerts</span></div>
+<div class="status-item"><div class="status-indicator status-active"></div><span>Last Update: <span id="last-update">Just now</span></span></div>
+</div>
+
+<nav class="nav">
+<button class="active" onclick="switchTab('dashboard')">Dashboard</button>
+<button onclick="switchTab('air-quality')">Air Quality</button>
+<button onclick="switchTab('water-quality')">Water Quality</button>
+<button onclick="switchTab('predictions')">AI Predictions</button>
+<button onclick="switchTab('controls')">Controls</button>
+<button onclick="switchTab('reports')">Reports</button>
+</nav>
+
+<!-- Dashboard -->
+<div id="dashboard" class="tab-content active">
+<div class="region-selector">
+<select id="city-select">
+<option value="Delhi" selected>Delhi</option>
+<option value="Mumbai">Mumbai</option>
+<option value="Bengaluru">Bengaluru</option>
+<option value="Kolkata">Kolkata</option>
+</select>
+<button onclick="loadRegionData()">Load Data</button>
+</div>
+<div class="metrics-grid">
+<div class="metric-card">
+<div class="metric-header"><div>Air Quality Index</div><div class="prediction-badge">AI Predicted</div></div>
+<div class="metric-value" id="aqi-value">145</div>
+<div class="metric-unit" id="aqi-category">Unhealthy for Sensitive Groups 🧒👵</div>
+</div>
+<div class="metric-card">
+<div class="metric-header"><div>Water Quality Index</div><div class="prediction-badge">Live Data</div></div>
+<div class="metric-value" id="wqi-value">75</div>
+<div class="metric-unit" id="wqi-category">Good 👍</div>
+</div>
+<div class="metric-card">
+<div class="metric-header"><div>PM2.5</div><div class="prediction-badge">Trending</div></div>
+<div class="metric-value" id="pm25-value">110</div>
+<div class="metric-unit">μg/m³</div>
+</div>
+<div class="metric-card">
+<div class="metric-header"><div>Temperature</div><div class="prediction-badge">Live</div></div>
+<div class="metric-value" id="temp-value">34</div>
+<div class="metric-unit">°C</div>
+</div>
+</div>
+<div class="alert alert-warning" id="dashboard-alert">⚠️ PM2.5 predicted to increase by 10% in next 3 hours</div>
+<div class="chart-container"><canvas id="dashboard-chart"></canvas></div>
+
+<!-- Comparison Table -->
+<h3>Weekly Comparison (AQI/WQI)</h3>
+<table id="dashboard-table">
+<thead>
+<tr><th>City</th><th>AQI</th><th>WQI</th><th>PM2.5</th><th>Temp °C</th><th>Trend</th></tr>
+</thead>
+<tbody></tbody>
+</table>
+</div>
+
+<!-- Air Quality -->
+<div id="air-quality" class="tab-content">
+<h2>Air Quality Trends & Comparison</h2>
+<div class="chart-container"><canvas id="air-chart"></canvas></div>
+<h3>Weekly AQI Comparison</h3>
+<table id="air-table">
+<thead><tr><th>City</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th><th>Avg</th></tr></thead>
+<tbody></tbody>
+</table>
+</div>
+
+<!-- Water Quality -->
+<div id="water-quality" class="tab-content">
+<h2>Water Quality Trends & Comparison</h2>
+<div class="chart-container"><canvas id="water-chart"></canvas></div>
+<h3>Weekly WQI Comparison</h3>
+<table id="water-table">
+<thead><tr><th>City</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th><th>Avg</th></tr></thead>
+<tbody></tbody>
+</table>
+</div>
+
+<!-- Predictions -->
+<div id="predictions" class="tab-content">
+<h2>AI Predictions & 10-Day Forecast</h2>
+<ul id="prediction-list"></ul>
+<h3>Next 10 Days AQI & WQI Forecast</h3>
+<table id="forecast-table">
+<thead><tr><th>Date</th><th>AQI</th><th>WQI</th><th>PM2.5</th><th>Advice</th></tr></thead>
+<tbody></tbody>
+</table>
+</div>
+
+<!-- Controls -->
+<div id="controls" class="tab-content">
+<h2>IoT Controls Simulation</h2>
+<div class="controls-grid">
+<div class="control-card">
+<h3>Air Purifier</h3>
+<div class="control-item">Status <label class="switch"><input type="checkbox" id="air-purifier"><span class="slider"></span></label></div>
+</div>
+<div class="control-card">
+<h3>Water Treatment Pump</h3>
+<div class="control-item">Status <label class="switch"><input type="checkbox" id="water-pump"><span class="slider"></span></label></div>
+</div>
+</div>
+</div>
+
+<!-- Reports -->
+<div id="reports" class="tab-content">
+<h2>Download Reports</h2>
+<button onclick="downloadReport()">Download CSV</button>
+</div>
+</div>
+
+<!-- AI Assistant -->
+<div class="ai-assistant">
+<div class="ai-chat-container" id="ai-chat">
+<div class="ai-chat-header">
+<span>EcoAI Assistant</span>
+<button onclick="toggleAIChat()">×</button>
+</div>
+<div class="ai-chat-messages" id="ai-messages">
+<div class="ai-message assistant">Hello! I'm your AI assistant.</div>
+</div>
+<div class="ai-chat-input">
+<input type="text" id="ai-input" placeholder="Ask about environmental data..." onkeypress="if(event.key==='Enter'){sendAIMessage()}">
+<button onclick="sendAIMessage()"><i class="fas fa-paper-plane"></i></button>
+</div>
+</div>
+<button class="ai-button" onclick="toggleAIChat()"><i class="fas fa-robot"></i></button>
+</div>
+
+<script>
+// Cities and sample weekly data
+const cities = ['Delhi','Mumbai','Bengaluru','Kolkata'];
+const airData={'Delhi':[160,165,170,155,150,145,160],'Mumbai':[90,92,95,88,85,87,90],'Bengaluru':[70,72,75,68,65,70,72],'Kolkata':[120,125,130,118,115,120,122]};
+const waterData={'Delhi':[60,62,65,58,55,60,63],'Mumbai':[75,78,80,77,76,79,75],'Bengaluru':[85,87,90,88,85,88,90],'Kolkata':[70,72,75,68,65,70,73]};
+
+// Tab switch
+function switchTab(tabId){
+document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+document.getElementById(tabId).classList.add('active');
+document.querySelectorAll('nav.nav button').forEach(b=>b.classList.remove('active'));
+event.target.classList.add('active');
+}
+
+// AQI/WQI Categories
+function getAQICategory(aqi){
+aqi=parseInt(aqi);
+if(aqi<=50)return{label:'Good 😊',class:'metric-good'};
+if(aqi<=100)return{label:'Moderate 😐',class:'metric-moderate'};
+if(aqi<=150)return{label:'Unhealthy for Sensitive Groups 🧒👵',class:'metric-unhealthy-sensitive'};
+if(aqi<=200)return{label:'Unhealthy 😷',class:'metric-unhealthy'};
+if(aqi<=300)return{label:'Very Unhealthy 😨',class:'metric-very-unhealthy'};
+return{label:'Hazardous ☠️',class:'metric-hazardous'};
+}
+function getWQICategory(wqi){
+wqi=parseInt(wqi);
+if(wqi>=90)return{label:'Excellent 💧',class:'metric-excellent'};
+if(wqi>=70)return{label:'Good 👍',class:'metric-good-water'};
+if(wqi>=50)return{label:'Fair ⚠️',class:'metric-fair'};
+return{label:'Poor 🚫',class:'metric-poor'};
+}
+
+// Update metric cards
+function updateMetricCards(aqi,wqi){
+const aqiCard=document.getElementById('aqi-value').parentElement.parentElement;
+const wqiCard=document.getElementById('wqi-value').parentElement.parentElement;
+const aqiCat=getAQICategory(aqi);
+const wqiCat=getWQICategory(wqi);
+document.getElementById('aqi-value').innerText=aqi;
+document.getElementById('aqi-category').innerText=aqiCat.label;
+aqiCard.className='metric-card '+aqiCat.class;
+document.getElementById('wqi-value').innerText=wqi;
+document.getElementById('wqi-category').innerText=wqiCat.label;
+wqiCard.className='metric-card '+wqiCat.class;
+}
+
+// Load data for selected city
+function loadRegionData(){
+const city=document.getElementById('city-select').value;
+const AQI=airData[city][6];
+const WQI=waterData[city][6];
+const PM25=AQI-20;
+const TEMP=Math.floor(Math.random()*10+25);
+document.getElementById('pm25-value').innerText=PM25;
+document.getElementById('temp-value').innerText=TEMP;
+updateMetricCards(AQI,WQI);
+document.getElementById('dashboard-alert').innerText='⚠️ PM2.5 predicted based on AI model';
+drawDashboardChart(city);
+drawAirChart();
+drawWaterChart();
+populateTables();
+generatePredictions(city);
+generateForecast(city);
+}
+
+// Charts
+function drawDashboardChart(city){
+const ctx=document.getElementById('dashboard-chart').getContext('2d');
+if(window.dashboardChart)window.dashboardChart.destroy();
+window.dashboardChart=new Chart(ctx,{type:'line',data:{labels:['0h','1h','2h','3h','4h','5h','6h'],datasets:[{label:'PM2.5',data:[...airData[city]],borderColor:'#00796b',fill:false,tension:0.3}]}});
+}
+function drawAirChart(){
+const ctx=document.getElementById('air-chart').getContext('2d');
+if(window.airChart)window.airChart.destroy();
+window.airChart=new Chart(ctx,{type:'line',data:{labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],datasets:cities.map(city=>({label:city,data:airData[city],borderColor:'#'+Math.floor(Math.random()*16777215).toString(16),fill:false,tension:0.3}))}});
+}
+function drawWaterChart(){
+const ctx=document.getElementById('water-chart').getContext('2d');
+if(window.waterChart)window.waterChart.destroy();
+window.waterChart=new Chart(ctx,{type:'line',data:{labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],datasets:cities.map(city=>({label:city,data:waterData[city],borderColor:'#'+Math.floor(Math.random()*16777215).toString(16),fill:false,tension:0.3}))}});
+}
+
+// Tables
+function populateTables(){
+const dashT=document.getElementById('dashboard-table').querySelector('tbody');
+dashT.innerHTML='';
+cities.forEach(city=>{
+const avgAQI=Math.round(airData[city].reduce((a,b)=>a+b,0)/7);
+const avgWQI=Math.round(waterData[city].reduce((a,b)=>a+b,0)/7);
+const trend=airData[city][6]>airData[city][0]?'📈':'📉';
+dashT.innerHTML+=`<tr><td>${city}</td><td>${avgAQI}</td><td>${avgWQI}</td><td>${airData[city][6]-20}</td><td>${Math.floor(Math.random()*10+25)}</td><td>${trend}</td></tr>`;
+});
+// Air table
+const airT=document.getElementById('air-table').querySelector('tbody');
+airT.innerHTML='';
+cities.forEach(city=>{
+const avg=Math.round(airData[city].reduce((a,b)=>a+b,0)/7);
+airT.innerHTML+=`<tr><td>${city}</td>${airData[city].map(d=>`<td>${d}</td>`).join('')}<td>${avg}</td></tr>`;
+});
+// Water table
+const waterT=document.getElementById('water-table').querySelector('tbody');
+waterT.innerHTML='';
+cities.forEach(city=>{
+const avg=Math.round(waterData[city].reduce((a,b)=>a+b,0)/7);
+waterT.innerHTML+=`<tr><td>${city}</td>${waterData[city].map(d=>`<td>${d}</td>`).join('')}<td>${avg}</td></tr>`;
+});
+}
+
+// AI Predictions
+function generatePredictions(city){
+const list=document.getElementById('prediction-list');
+list.innerHTML='';
+const tips=['Avoid outdoor activities during peak PM2.5 hours','Ensure water treatment before drinking','Indoor air purification recommended','Monitor AQI and WQI daily'];
+tips.forEach(tip=>{const li=document.createElement('li');li.innerText=tip;list.appendChild(li);});
+}
+
+// 10-Day Forecast
+function generateForecast(city){
+const table=document.getElementById('forecast-table').querySelector('tbody');
+table.innerHTML='';
+for(let i=1;i<=10;i++){
+const date=new Date();date.setDate(date.getDate()+i);
+const AQI=Math.round(airData[city][6]+Math.random()*20-10);
+const WQI=Math.round(waterData[city][6]+Math.random()*10-5);
+const PM25=Math.round(AQI-20);
+let advice;
+if(AQI>150)advice='Limit outdoor exposure';
+else if(AQI>100)advice='Be cautious';
+else advice='Safe for outdoor';
+table.innerHTML+=`<tr><td>${date.toLocaleDateString()}</td><td>${AQI} (${getAQICategory(AQI).label})</td><td>${WQI} (${getWQICategory(WQI).label})</td><td>${PM25}</td><td>${advice}</td></tr>`;
+}
+}
+
+// Report
+function downloadReport(){
+const city=document.getElementById('city-select').value;
+const data=[['City','AQI','WQI','PM2.5','Temperature'],[city,document.getElementById('aqi-value').innerText,document.getElementById('wqi-value').innerText,document.getElementById('pm25-value').innerText,document.getElementById('temp-value').innerText]];
+let csv='';data.forEach(row=>{csv+=row.join(',')+'\n';});
+const blob=new Blob([csv],{type:'text/csv'});const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download='environment_report_'+city+'.csv';link.click();
+}
+
+// AI Assistant
+function toggleAIChat(){
+const chat=document.getElementById('ai-chat');
+chat.style.display = chat.style.display==='flex'?'none':'flex';
+}
+function sendAIMessage(){
+const input=document.getElementById('ai-input');
+const msg=input.value.trim();
+if(!msg)return;
+appendAIMessage('user',msg);
+input.value='';
+setTimeout(()=>{appendAIMessage('assistant',getAIResponse(msg));},500);
+}
+function appendAIMessage(sender,text){
+const div=document.createElement('div');div.classList.add('ai-message',sender);div.innerText=text;
+document.getElementById('ai-messages').appendChild(div);
+document.getElementById('ai-messages').scrollTop=document.getElementById('ai-messages').scrollHeight;
+}
+function getAIResponse(msg){
+const lower=msg.toLowerCase();
+if(lower.includes('10 day')||lower.includes('forecast'))return'Check the "AI Predictions" tab for 10-day AQI/WQI forecast with advice.';
+if(lower.includes('trend')||lower.includes('chart')||lower.includes('historical'))return'Air/Water trends are shown in charts and tables above.';
+if(lower.includes('help')||lower.includes('support'))return'I provide AQI/WQI info, trends, alerts, comparisons, and 10-day predictions for Indian cities.';
+if(lower.includes('hello')||lower.includes('hi'))return'Hello! 👋 I am EcoAI. Ask about AQI, WQI, trends, or 10-day predictions.';
+return'I am EcoAI. Ask about air/water quality, comparisons, or predictive forecasts.';
+}
+
+loadRegionData();
+</script>
+</body>
+</html>

@@ -1,0 +1,604 @@
+# Environmental Dashboard with EPA US Standards
+
+I'll add the report section functionality and AI chatbot to the existing dashboard while keeping all other features intact.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indrasha - Environmental Intelligence</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌍 Indrasha - Environmental Intelligence</h1>
+            <div class="status-bar">
+                <div class="status-item">
+                    <div class="status-indicator status-active"></div>
+                    <span>API Connected</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-indicator status-active"></div>
+                    <span>AI/ML Models Active</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-indicator status-warning"></div>
+                    <span>3 Active Alerts</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-indicator status-active"></div>
+                    <span>Last Update: <span id="last-update">Just now</span></span>
+                </div>
+            </div>
+        </div>
+
+        <nav class="nav">
+            <button class="active" onclick="switchTab('dashboard')">Dashboard</button>
+            <button onclick="switchTab('air-quality')">Air Quality</button>
+            <button onclick="switchTab('water-quality')">Water Quality</button>
+            <button onclick="switchTab('predictions')">AI Predictions</button>
+            <button onclick="switchTab('controls')">Controls</button>
+            <button onclick="switchTab('reports')">Reports</button>
+        </nav>
+
+        <div id="dashboard" class="tab-content active">
+            <div class="region-selector">
+                <select id="country-select">
+                    <option value="US" selected>United States</option>
+                </select>
+                <select id="state-select">
+                    <option value="CA">California</option>
+                    <option value="TX">Texas</option>
+                    <option value="NY">New York</option>
+                    <option value="FL">Florida</option>
+                    <option value="IL">Illinois</option>
+                </select>
+                <select id="city-select">
+                    <option value="Los Angeles">Los Angeles</option>
+                    <option value="Houston">Houston</option>
+                    <option value="New York">New York</option>
+                    <option value="Miami">Miami</option>
+                    <option value="Chicago">Chicago</option>
+                </select>
+                <button onclick="loadRegionData()">Load Data</button>
+            </div>
+
+            <div class="api-status">
+                <div class="api-indicator"></div>
+                <span>Real-time data streaming from EPA environmental sensors in Los Angeles, CA</span>
+            </div>
+
+            <div class="map-container">
+                <div class="map-placeholder">
+                    <i class="fas fa-map-marker-alt" style="font-size: 2em; margin-bottom: 10px;"></i>
+                    <p>Environmental Monitoring Map View</p>
+                </div>
+            </div>
+
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <div class="metric-title">Air Quality Index</div>
+                        <div class="prediction-badge">EPA Standard</div>
+                    </div>
+                    <div class="metric-value" id="aqi-value">78</div>
+                    <div class="aqi-indicator moderate">Moderate</div>
+                    <div class="metric-unit">AQI (EPA US Standard)</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <div class="metric-title">PM2.5 Concentration</div>
+                        <div class="prediction-badge">EPA Standard</div>
+                    </div>
+                    <div class="metric-value" id="pm25-value">12.3</div>
+                    <div class="metric-unit">μg/m³ (EPA Limit: 12 μg/m³)</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <div class="metric-title">Ozone (O₃)</div>
+                        <div class="prediction-badge">EPA Standard</div>
+                    </div>
+                    <div class="metric-value" id="ozone-value">0.065</div>
+                    <div class="metric-unit">ppm (EPA Limit: 0.070 ppm)</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <div class="metric-title">Temperature</div>
+                        <div class="prediction-badge">Live</div>
+                    </div>
+                    <div class="metric-value" id="temp-value">72.5</div>
+                    <div class="metric-unit">°F</div>
+                </div>
+            </div>
+
+            <div class="epa-standard">
+                <h3>EPA US Air Quality Standards</h3>
+                <p>The U.S. Environmental Protection Agency (EPA) has set National Ambient Air Quality Standards for six principal pollutants:</p>
+                <ul>
+                    <li>PM2.5: 12 μg/m³ (annual mean)</li>
+                    <li>PM10: 150 μg/m³ (24-hour mean)</li>
+                    <li>Ozone: 0.070 ppm (8-hour mean)</li>
+                    <li>NO₂: 100 ppb (1-hour mean)</li>
+                    <li>SO₂: 75 ppb (1-hour mean)</li>
+                    <li>CO: 9 ppm (8-hour mean)</li>
+                </ul>
+            </div>
+
+            <div class="alert alert-warning">
+                <strong>⚠️ EPA Alert:</strong> PM2.5 levels are approaching the EPA standard limit of 12 μg/m³. Consider reducing outdoor activities.
+            </div>
+
+            <div class="ml-insights">
+                <h3>🤖 AI/ML Insights</h3>
+                <div class="insight-item">
+                    <div class="insight-icon">📊</div>
+                    <div>Machine learning model predicts air quality will remain moderate for the next 24 hours</div>
+                </div>
+                <div class="insight-item">
+                    <div class="insight-icon">🔍</div>
+                    <div>Anomaly detection: Ozone levels show typical pattern for this season</div>
+                </div>
+                <div class="insight-item">
+                    <div class="insight-icon">📈</div>
+                    <div>Trend analysis: PM2.5 levels correlate with traffic data (R² = 0.89) in Los Angeles</div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="realtime-chart"></canvas>
+            </div>
+        </div>
+
+        <div id="air-quality" class="tab-content">
+            <h2>Air Quality Monitoring - EPA US Standards</h2>
+            
+            <div class="region-selector">
+                <select id="air-country-select">
+                    <option value="US" selected>United States</option>
+                </select>
+                <select id="air-state-select">
+                    <option value="CA">California</option>
+                    <option value="TX">Texas</option>
+                    <option value="NY">New York</option>
+                    <option value="FL">Florida</option>
+                </select>
+                <select id="air-city-select">
+                    <option value="Los Angeles">Los Angeles</option>
+                    <option value="Houston">Houston</option>
+                    <option value="New York">New York</option>
+                    <option value="Miami">Miami</option>
+                </select>
+                <button onclick="loadAirQualityData()">Load Data</button>
+            </div>
+            
+            <div class="time-selector">
+                <button class="active" onclick="changeTimePeriod('24h')">Today</button>
+                <button onclick="changeTimePeriod('7d')">7 Days</button>
+                <button onclick="changeTimePeriod('30d')">30 Days</button>
+                <button onclick="changeTimePeriod('90d')">90 Days</button>
+            </div>
+
+            <div class="api-status">
+                <div class="api-indicator"></div>
+                <span>Connected to EPA AirNow API & Local Sensors</span>
+            </div>
+            
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-title">PM2.5</div>
+                    <div class="metric-value" id="air-pm25">12.3</div>
+                    <div class="metric-unit">μg/m³ (EPA Limit: 12 μg/m³)</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">PM10</div>
+                    <div class="metric-value" id="air-pm10">45</div>
+                    <div class="metric-unit">μg/m³ (EPA Limit: 150 μg/m³)</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Ozone (O₃)</div>
+                    <div class="metric-value" id="air-ozone">0.065</div>
+                    <div class="metric-unit">ppm (EPA Limit: 0.070 ppm)</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">NO₂</div>
+                    <div class="metric-value" id="air-no2">0.042</div>
+                    <div class="metric-unit">ppm (EPA Limit: 0.100 ppm)</div>
+                </div>
+            </div>
+            
+            <div class="epa-standard">
+                <h3>EPA Air Quality Index (AQI) Levels</h3>
+                <p>The EPA AQI is divided into six categories indicating air quality levels:</p>
+                <ul>
+                    <li><span class="aqi-indicator good" style="display: inline-block; width: 20px; height: 20px;"></span> Good (0-50): Air quality is satisfactory</li>
+                    <li><span class="aqi-indicator moderate" style="display: inline-block; width: 20px; height: 20px;"></span> Moderate (51-100): Acceptable quality</li>
+                    <li><span class="aqi-indicator unhealthy-sensitive" style="display: inline-block; width: 20px; height: 20px;"></span> Unhealthy for Sensitive Groups (101-150)</li>
+                    <li><span class="aqi-indicator unhealthy" style="display: inline-block; width: 20px; height: 20px;"></span> Unhealthy (151-200)</li>
+                    <li><span class="aqi-indicator very-unhealthy" style="display: inline-block; width: 20px; height: 20px;"></span> Very Unhealthy (201-300)</li>
+                    <li><span class="aqi-indicator hazardous" style="display: inline-block; width: 20px; height: 20px;"></span> Hazardous (301-500)</li>
+                </ul>
+            </div>
+            
+            <div class="chart-container">
+                <canvas id="air-trend-chart"></canvas>
+            </div>
+            
+            <h3 style="margin-top: 30px;">Historical Data (EPA Standards)</h3>
+            <div class="chart-container">
+                <canvas id="air-history-chart"></canvas>
+            </div>
+            
+            <h3 style="margin-top: 30px;">Pollutant Comparison vs EPA Limits</h3>
+            <div class="chart-container">
+                <canvas id="air-comparison-chart"></canvas>
+            </div>
+        </div>
+
+        <div id="water-quality" class="tab-content">
+            <h2>Water Quality Monitoring</h2>
+            
+            <div class="region-selector">
+                <select id="water-country-select">
+                    <option value="US" selected>United States</option>
+                </select>
+                <select id="water-state-select">
+                    <option value="CA">California</option>
+                    <option value="TX">Texas</option>
+                    <option value="NY">New York</option>
+                    <option value="FL">Florida</option>
+                </select>
+                <select id="water-city-select">
+                    <option value="Los Angeles">Los Angeles</option>
+                    <option value="Houston">Houston</option>
+                    <option value="New York">New York</option>
+                    <option value="Miami">Miami</option>
+                </select>
+                <button onclick="loadWaterQualityData()">Load Data</button>
+            </div>
+            
+            <div class="time-selector">
+                <button class="active" onclick="changeTimePeriod('24h')">Today</button>
+                <button onclick="changeTimePeriod('7d')">7 Days</button>
+                <button onclick="changeTimePeriod('30d')">30 Days</button>
+                <button onclick="changeTimePeriod('90d')">90 Days</button>
+            </div>
+
+            <div class="api-status">
+                <div class="api-indicator"></div>
+                <span>Connected to EPA Water Quality Monitoring Systems</span>
+            </div>
+            
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-title">pH Level</div>
+                    <div class="metric-value" id="water-ph">7.2</div>
+                    <div class="metric-unit">pH (EPA Range: 6.5-8.5)</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Turbidity</div>
+                    <div class="metric-value" id="water-turbidity">4.8</div>
+                    <div class="metric-unit">NTU (EPA Limit: 5 NTU)</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Dissolved Oxygen</div>
+                    <div class="metric-value" id="water-do">6.8</div>
+                    <div class="metric-unit">mg/L (EPA Min: 5 mg/L)</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Lead Content</div>
+                    <div class="metric-value" id="water-lead">0.008</div>
+                    <div class="metric-unit">mg/L (EPA Limit: 0.015 mg/L)</div>
+                </div>
+            </div>
+            
+            <div class="epa-standard">
+                <h3>EPA Water Quality Standards</h3>
+                <p>The EPA sets standards for over 90 contaminants in drinking water:</p>
+                <ul>
+                    <li>pH: 6.5-8.5</li>
+                    <li>Turbidity: 5 NTU</li>
+                    <li>Lead: 0.015 mg/L</li>
+                    <li>Arsenic: 0.010 mg/L</li>
+                    <li>Nitrate: 10 mg/L</li>
+                    <li>Total Coliform: 0</li>
+                </ul>
+            </div>
+            
+            <div class="chart-container">
+                <canvas id="water-trend-chart"></canvas>
+            </div>
+            
+            <h3 style="margin-top: 30px;">Historical Data</h3>
+            <div class="chart-container">
+                <canvas id="water-history-chart"></canvas>
+            </div>
+            
+            <h3 style="margin-top: 30px;">Parameter Comparison vs EPA Limits</h3>
+            <div class="chart-container">
+                <canvas id="water-comparison-chart"></canvas>
+            </div>
+        </div>
+
+        <div id="predictions" class="tab-content">
+            <h2>AI Predictions & Forecasts</h2>
+            
+            <div class="api-status">
+                <div class="api-indicator"></div>
+                <span>Using TensorFlow.js with LSTM models for environmental forecasting</span>
+            </div>
+            
+            <div class="alert alert-success">
+                <strong>✅ Model Status:</strong> AI prediction models are active and providing forecasts with 92% accuracy
+            </div>
+            
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <div class="metric-title">Next 24h AQI Forecast</div>
+                        <div class="prediction-badge">LSTM Model</div>
+                    </div>
+                    <div class="metric-value" id="forecast-aqi">82</div>
+                    <div class="aqi-indicator moderate">Moderate</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <div class="metric-title">Next 24h PM2.5 Forecast</div>
+                        <div class="prediction-badge">LSTM Model</div>
+                    </div>
+                    <div class="metric-value" id="forecast-pm25">13.1</div>
+                    <div class="metric-unit">Predicted μg/m³</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <div class="metric-title">Next 24h Ozone Forecast</div>
+                        <div class="prediction-badge">RNN Model</div>
+                    </div>
+                    <div class="metric-value" id="forecast-ozone">0.068</div>
+                    <div class="metric-unit">Predicted ppm</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <div class="metric-title">Model Confidence</div>
+                        <div class="prediction-badge">Accuracy</div>
+                    </div>
+                    <div class="metric-value" id="model-confidence">92%</div>
+                    <div class="metric-unit">Average Accuracy</div>
+                </div>
+            </div>
+            
+            <h3>Air Quality Forecast (EPA Standards)</h3>
+            <div class="chart-container">
+                <canvas id="aq-forecast-chart"></canvas>
+            </div>
+            
+            <h3>Water Quality Forecast</h3>
+            <div class="chart-container">
+                <canvas id="wq-forecast-chart"></canvas>
+            </div>
+            
+            <div class="ml-insights">
+                <h3>🤖 AI/ML Model Details</h3>
+                <div class="insight-item">
+                    <div class="insight-icon">🧠</div>
+                    <div>Using Long Short-Term Memory (LSTM) networks for time-series forecasting of environmental data</div>
+                </div>
+                <div class="insight-item">
+                    <div class="insight-icon">📊</div>
+                    <div>Models trained on 5 years of historical EPA environmental data from 15 US cities</div>
+                </div>
+                <div class="insight-item">
+                    <div class="insight-icon">🔮</div>
+                    <div>Incorporating weather data, traffic patterns, and industrial activity for improved prediction accuracy</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="controls" class="tab-content">
+            <h2>Environmental Controls</h2>
+            
+            <div class="api-status">
+                <div class="api-indicator"></div>
+                <span>Connected to IoT environmental control systems</span>
+            </div>
+            
+            <div class="alert alert-warning">
+                <strong>⚠️ Note:</strong> These controls manage connected environmental systems. Changes will affect real-world devices.
+            </div>
+            
+            <div class="controls-grid">
+                <div class="control-card">
+                    <h3>Air Purification Systems</h3>
+                    <div class="control-item">
+                        <span>Industrial Zone Filters</span>
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="control-item">
+                        <span>Public Space Purifiers</span>
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="control-item">
+                        <span>Monitoring Stations</span>
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="control-card">
+                    <h3>Water Treatment Systems</h3>
+                    <div class="control-item">
+                        <span>Reservoir Filtration</span>
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="control-item">
+                        <span>Wastewater Recycling</span>
+                        <label class="switch">
+                            <input type="checkbox">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="control-item">
+                        <span>Quality Monitoring</span>
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="control-card">
+                    <h3>Alert Systems</h3>
+                    <div class="control-item">
+                        <span>Public Health Advisories</span>
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="control-item">
+                        <span>Industrial Regulation Notices</span>
+                        <label class="switch">
+                            <input type="checkbox">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="control-item">
+                        <span>Automated EPA Reports</span>
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="control-card">
+                    <h3>Data Collection</h3>
+                    <div class="control-item">
+                        <span>AQI Sensors Network</span>
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="control-item">
+                        <span>Water Quality Sensors</span>
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="control-item">
+                        <span>Weather Stations</span>
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <canvas id="control-impact-chart"></canvas>
+            </div>
+        </div>
+
+        <div id="reports" class="tab-content">
+            <h2>Environmental Reports</h2>
+            
+            <div class="api-status">
+                <div class="api-indicator"></div>
+                <span>Automated report generation system</span>
+            </div>
+            
+            <div class="reports-section">
+                <h3>Monthly Environmental Report - Los Angeles, CA</h3>
+                <p>Generated on: October 15, 2023 | Data period: September 1-30, 2023</p>
+                
+                <div class="reports-grid">
+                    <div class="report-card">
+                        <div class="report-icon"><i class="fas fa-wind"></i></div>
+                        <div class="report-title">Air Quality Report</div>
+                        <div class="report-desc">Comprehensive analysis of air quality parameters including PM2.5, PM10, NO₂, SO₂, and Ozone levels across Los Angeles</div>
+                        <button class="report-btn" onclick="generateReport('air-quality')">Generate Report</button>
+                    </div>
+                    
+                    <div class="report-card">
+                        <div class="report-icon"><i class="fas fa-tint"></i></div>
+                        <div class="report-title">Water Quality Report</div>
+                        <div class="report-desc">Analysis of water quality in local water bodies including pH, BOD, DO, and turbidity measurements</div>
+                        <button class="report-btn" onclick="generateReport('water-quality')">Generate Report</button>
+                    </div>
+                    
+                    <div class="report-card">
+                        <div class="report-icon"><i class="fas fa-chart-line"></i></div>
+                        <div class="report-title">Yearly Comparison</div>
+                        <div class="report-desc">Comparison of current environmental data with previous years to identify trends and patterns</div>
+                        <button class="report-btn" onclick="generateReport('comparison')">Generate Report</button>
+                    </div>
+                    
+                    <div class="report-card">
+                        <div class="report-icon"><i class="fas fa-cloud-sun"></i></div>
+                        <div class="report-title">Forecast Report</div>
+                        <div class="report-desc">AI-powered predictions for next quarter's environmental conditions and potential concerns</div>
+                        <button class="report-btn" onclick="generateReport('forecast')">Generate Report</button>
+                    </div>
+                </div>
+                
+                <h3 style="margin-top: 30px;">Recent Reports</h3>
+                <div class="epa-standard">
+                    <div id="report-status">
+                        <p>No reports generated yet. Click on any "Generate Report" button to create a new report.</p>
+                    </div>
+                    <div id="generated-reports" style="margin-top: 20px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <button class="data-refresh" onclick="refreshData()">
+            <i class="fas fa-sync-alt"></i>
+        </button>
+
+        <!-- AI Assistant -->
+        <div class="ai-assistant">
+            <button class="ai-button" onclick="toggleAIChat()">
+                <i class="fas fa-robot"></i>
+            </button>
+            <div class="ai-chat-container" id="ai-chat">
+                <div class="ai-chat-header">
+                    <span>Indrasha AI Assistant</span>
+                    <button onclick="toggleAIChat()" style="background: none; border: none; color: white; cursor: pointer;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ai-chat-messages" id="ai-messages">
+                    <div class="ai-message assistant">
+                        Hello! I'm your environmental AI assistant. How can I help you today?
+                    </div>
+                </div>
+                <div class="ai-chat-input">
+                    <input type="text" id="ai-input" placeholder="Ask about environmental data...">
+                    <button onclick="sendAIMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+       
+</body> 
+</html>
